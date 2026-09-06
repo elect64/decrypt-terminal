@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DECRYPT — Check-In Terminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+
+<!-- Open Source QR Code Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body data-theme="dark">
+
+  <div class="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">Decrypt</span>
+        <span class="brand-sub">check-in terminal</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme" aria-pressed="false">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/>
+          <path stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M20.2 14.6A8.5 8.5 0 1 1 9.4 3.8a6.8 6.8 0 0 0 10.8 10.8Z"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="stage">
+      <section class="scanner-card">
+
+        <div class="viewfinder" id="viewfinder">
+          <div id="reader"></div>
+
+          <svg class="reticle" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <path d="M6 44V20a14 14 0 0 1 14-14h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M156 6h24a14 14 0 0 1 14 14v24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M194 156v24a14 14 0 0 1-14 14h-24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <path d="M44 194H20a14 14 0 0 1-14-14v-24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+
+          <div class="scan-line" id="scan-line"></div>
+        </div>
+
+        <div class="status-row">
+          <span class="status-dot" id="status-dot"></span>
+          <p class="status-text" id="scanner-status">Align a code inside the frame</p>
+        </div>
+
+      </section>
+    </main>
+
+    <button class="sheet-backdrop" id="sheet-backdrop" tabindex="-1" aria-hidden="true"></button>
+
+    <section class="sheet" id="result-sheet" aria-hidden="true" role="dialog" aria-labelledby="res-title">
+      <div class="sheet-grabber" aria-hidden="true"></div>
+
+      <div class="sheet-icon" id="sheet-icon"></div>
+
+      <h2 class="sheet-title" id="res-title">—</h2>
+      <p class="sheet-subtitle" id="res-subtitle"></p>
+
+      <dl class="sheet-meta">
+        <div class="meta-row">
+          <dt>Name</dt>
+          <dd id="res-name">—</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Access code</dt>
+          <dd id="res-code" class="mono">—</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Track</dt>
+          <dd id="res-track">—</dd>
+        </div>
+        <div class="meta-row">
+          <dt>Time</dt>
+          <dd id="res-time" class="mono">—</dd>
+        </div>
+      </dl>
+
+      <button class="btn-primary" id="btn-reset" type="button">Scan next ticket</button>
+    </section>
+
+  </div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
