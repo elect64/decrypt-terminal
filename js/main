@@ -1,0 +1,104 @@
+    // Paste your deployed Google Apps Script Web App URL here
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMF66nrGeQAG9vSiK9KGPS80H7Vr84BoBwrkF0uNEhTAKoEtwdYeYdRxI182KsOY7_BQ/exec";
+
+    let html5QrcodeScanner;
+    let isProcessing = false;
+
+    function initScanner() {
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      
+      const config = { 
+        fps: 10, 
+        qrbox: { width: 220, height: 220 },
+        aspectRatio: 1.0
+      };
+
+      html5QrcodeScanner.start(
+        { facingMode: "environment" }, // Prefers rear camera
+        config,
+        onScanSuccess
+      ).catch(err => {
+        document.getElementById('scanner-status').innerText = "CAMERA ACCESS DENIED OR UNAVAILABLE";
+      });
+    }
+
+    async function onScanSuccess(decodedText) {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      // Pause scanner while verifying
+      html5QrcodeScanner.pause();
+      document.getElementById('scanner-status').innerText = "VERIFYING CODE WITH DATABASE...";
+
+      try {
+        // Query Google Sheets via GET request
+        const response = await fetch(`${SCRIPT_URL}?action=checkin&code=${encodeURIComponent(decodedText)}`);
+        const data = await response.json();
+
+        displayResult(data, decodedText);
+
+      } catch (error) {
+        displayResult({ status: 'error', message: 'Network error or script timeout.' }, decodedText);
+      }
+    }
+
+    function displayResult(data, scannedCode) {
+      const box = document.getElementById('result-box');
+      const title = document.getElementById('res-title');
+      const name = document.getElementById('res-name');
+      const code = document.getElementById('res-code');
+      const track = document.getElementById('res-track');
+      const time = document.getElementById('res-time');
+      const btn = document.getElementById('btn-reset');
+
+      box.className = 'result-box'; // Reset classes
+
+      if (data.status === 'success') {
+        box.classList.add('success');
+        title.innerText = "✓ ACCESS GRANTED";
+        name.innerText = data.name;
+        code.innerText = data.code;
+        track.innerText = data.track;
+        time.innerText = data.time;
+        document.getElementById('scanner-status').innerText = "CHECK-IN COMPLETE";
+
+      } else if (data.status === 'already_checked_in') {
+        box.classList.add('warning');
+        title.innerText = "⚠ ALREADY CHECKED IN";
+        name.innerText = data.name;
+        code.innerText = data.code;
+        track.innerText = data.track;
+        time.innerText = `Previously at ${data.time}`;
+        document.getElementById('scanner-status').innerText = "ATTENDEE WAS ALREADY CHECKED IN";
+
+      } else if (data.status === 'not_found') {
+        box.classList.add('danger');
+        title.innerText = "✕ INVALID CODE";
+        name.innerText = "NOT FOUND IN DATABASE";
+        code.innerText = scannedCode;
+        track.innerText = "N/A";
+        time.innerText = "N/A";
+        document.getElementById('scanner-status').innerText = "UNREGISTERED ACCESS CODE";
+
+      } else {
+        box.classList.add('danger');
+        title.innerText = "✕ SYSTEM ERROR";
+        name.innerText = data.message || "UNABLE TO VERIFY";
+        code.innerText = scannedCode;
+        track.innerText = "N/A";
+        time.innerText = "N/A";
+      }
+
+      btn.classList.add('show');
+    }
+
+    function resetScanner() {
+      document.getElementById('result-box').className = 'result-box';
+      document.getElementById('btn-reset').classList.remove('show');
+      document.getElementById('scanner-status').innerText = "CAMERA READY — ALIGN QR CODE";
+      isProcessing = false;
+      html5QrcodeScanner.resume();
+    }
+
+    // Start scanner on load
+    window.addEventListener('DOMContentLoaded', initScanner);
