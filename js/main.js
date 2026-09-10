@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxmQTZXXAnZj22he76o02R4DYK44sgZFPGQK0j0SaScauSu9rs7_xrCxOKyMoTfz8zZQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQLsllfL09f26ZvS2WHvn4Qa2nicqwaYMLF41z3Pz_RPGqb1vZJF6NWiolFc4gtfYn8A/exec";
 
 let html5QrcodeScanner;
 let isProcessing = false;
@@ -187,3 +187,180 @@ backdrop.addEventListener("click", resetScanner);
 
 // Start scanner on load
 window.addEventListener("DOMContentLoaded", initScanner);
+
+
+/* -----------------------------------------------------------
+   Tab Routing & Scanner Control
+----------------------------------------------------------- */
+const tabScan = document.getElementById('tab-scan');
+const tabSearch = document.getElementById('tab-search');
+const viewScan = document.getElementById('view-scan');
+const viewSearch = document.getElementById('view-search');
+
+tabScan.addEventListener('click', () => {
+  tabScan.classList.add('is-active');
+  tabSearch.classList.remove('is-active');
+  viewScan.classList.remove('is-hidden');
+  viewSearch.classList.add('is-hidden');
+  
+  if (html5QrcodeScanner && html5QrcodeScanner.getState() === Html5QrcodeScannerState.PAUSED && !isProcessing) {
+    html5QrcodeScanner.resume();
+  }
+});
+
+tabSearch.addEventListener('click', () => {
+  tabSearch.classList.add('is-active');
+  tabScan.classList.remove('is-active');
+  viewSearch.classList.remove('is-hidden');
+  viewScan.classList.add('is-hidden');
+  
+  if (html5QrcodeScanner && html5QrcodeScanner.getState() === Html5QrcodeScannerState.SCANNING) {
+    html5QrcodeScanner.pause();
+  }
+});
+
+/* -----------------------------------------------------------
+   Manual Search Logic
+----------------------------------------------------------- */
+const searchForm = document.getElementById('search-form');
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+const searchResults = document.getElementById('search-results');
+
+searchForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const query = searchInput.value.trim();
+  if (!query) return;
+
+  searchBtn.disabled = true;
+  searchBtn.innerText = "Wait...";
+  searchResults.innerHTML = `<p style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 20px;">Querying database...</p>`;
+
+  try {
+    // Requires GET to read the JSON response seamlessly
+    const res = await fetch(`${SCRIPT_URL}?action=search&query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    if (data.status === "success") {
+      renderSearchResults(data.results);
+    } else {
+      searchResults.innerHTML = `<p style="text-align: center; color: var(--danger); font-size: 0.85rem; padding: 20px;">Error: ${data.message}</p>`;
+    }
+  } catch (err) {
+    searchResults.innerHTML = `<p style="text-align: center; color: var(--danger); font-size: 0.85rem; padding: 20px;">Network error. Try again.</p>`;
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.innerText = "Find";
+  }
+});
+
+function renderSearchResults(results) {
+  if (results.length === 0) {
+    searchResults.innerHTML = `<p style="text-align: center; color: var(--text-tertiary); font-size: 0.85rem; padding: 20px;">No attendees found for this query.</p>`;
+    return;
+  }
+
+  searchResults.innerHTML = results.map(user => `
+    <div class="result-card">
+      <div class="result-card-header">
+        <div>
+          <h3 class="result-card-title">${user.name}</h3>
+          <p class="result-card-sub mono">${user.code} • ${user.track}</p>
+          <p class="result-card-sub" style="margin-top:2px;">${user.email}</p>
+        </div>
+        ${user.status === "CHECKED_IN" ? `<span class="badge-checked">✓ Verified</span>` : ``}
+      </div>
+      ${user.status !== "CHECKED_IN" 
+        ? `<button class="btn-primary btn-sm" onclick="triggerManualCheckIn('${user.code}')">Verify & Check In</button>` 
+        : `<button class="btn-primary btn-sm" style="background: var(--surface-3); color: var(--text-tertiary);" disabled>Already Checked In</button>`
+      }
+    </div>
+  `).join('');
+}
+
+// Routes manual check-in through the exact same verification endpoint as the camera
+window.triggerManualCheckIn = async function(code) {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  // Jump back to scanner view visually so the standard Result Sheet overlays properly
+  tabScan.click();
+  setStatus("Verifying manual entry...", true);
+
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=checkin&code=${encodeURIComponent(code)}`);
+    const data = await response.json();
+    
+    // Call your existing scanner result handler
+    processCheckInResult(data, code); 
+
+  } catch (error) {
+    processCheckInResult({ status: 'error', message: 'Network error or timeout.' }, code);
+  }
+};
+
+// Refactored from your original onScanSuccess to share logic
+function processCheckInResult(data, scannedCode) {
+  if (data.status === "success") {
+    openSheet("success", {
+      title: "Access granted",
+      subtitle: "Attendee checked in successfully.",
+      name: data.name,
+      code: data.code,
+      track: data.track,
+      time: data.time
+    });
+    setStatus("Check-in complete", false);
+
+  } else if (data.status === "already_checked_in") {
+    openSheet("warning", {
+      title: "Already checked in",
+      subtitle: "This code has already been used.",
+      name: data.name,
+      code: data.code,
+      track: data.track,
+      time: `Previously at ${data.time}`
+    });
+    setStatus("Attendee was already checked in", false);
+
+  } else if (data.status === "not_found") {
+    openSheet("danger", {
+      title: "Invalid code",
+      subtitle: "This code isn't in the database.",
+      name: "Not found",
+      code: scannedCode,
+      track: "—",
+      time: "—"
+    });
+    setStatus("Unregistered access code", false);
+
+  } else {
+    openSheet("danger", {
+      title: "System error",
+      subtitle: data.message || "Unable to verify this code.",
+      name: "—",
+      code: scannedCode,
+      track: "—",
+      time: "—"
+    });
+    setStatus("Something went wrong — try again", false);
+  }
+}
+
+// Update your onScanSuccess to use the shared handler
+async function onScanSuccess(decodedText) {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  html5QrcodeScanner.pause();
+  viewfinder.classList.add("is-paused");
+  setStatus("Verifying code with database...", true);
+
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=checkin&code=${encodeURIComponent(decodedText)}`);
+    const data = await response.json();
+    processCheckInResult(data, decodedText);
+  } catch (error) {
+    processCheckInResult({ status: 'error', message: 'Network error or timeout.' }, decodedText);
+  }
+}
