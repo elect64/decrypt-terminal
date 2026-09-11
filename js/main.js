@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxmQTZXXAnZj22he76o02R4DYK44sgZFPGQK0j0SaScauSu9rs7_xrCxOKyMoTfz8zZQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBbNaoLv_82SdZeJVb0y1DPycwttHQVCx03lh9v-1_NtdC2nML2HECEwSM9ZVr0yWzsg/exec";
 
 let html5QrcodeScanner;
 let isProcessing = false;
