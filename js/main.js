@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFpYLNWXgjLO-27Txb2E-Qi3sLSy2WcEpmnhKvq_oYdA9sbK24NbzIQ-Fu20n-X6uapw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQLsllfL09f26ZvS2WHvn4Qa2nicqwaYMLF41z3Pz_RPGqb1vZJF6NWiolFc4gtfYn8A/exec";
 
 let html5QrcodeScanner;
 let isProcessing = false;
@@ -38,7 +38,7 @@ initTheme();
 ----------------------------------------------------------- */
 const ICONS = {
   success: `<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  warning: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.7" r="1.1" fill="currentColor"/><path d="M10.6 3.9a1.6 1.6 0 0 1 2.8 0l8.2 14.6a1.6 1.6 0 0 1-1.4 2.4H3.8a1.6 1.6 0 0 1-1.4-2.4L10.6 3.9Z" stroke="currentColor" stroke-width="2"/></svg>`,
+  warning: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.7" r="1.1" fill="currentColor"/><path d[...]
   danger: `<svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`
 };
 
