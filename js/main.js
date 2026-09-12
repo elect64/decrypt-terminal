@@ -38,7 +38,7 @@ initTheme();
 ----------------------------------------------------------- */
 const ICONS = {
   success: `<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  warning: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.7" r="1.1" fill="currentColor"/><path d[...]
+  warning: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.7" r="1.1" fill="currentColor"/><path d="M12 2L1.5 21h21L12 2z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>`,
   danger: `<svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`
 };
 
@@ -70,23 +70,6 @@ function initScanner() {
   ).catch(() => {
     setStatus("Camera access denied or unavailable", false);
   });
-}
-
-async function onScanSuccess(decodedText) {
-  if (isProcessing) return;
-  isProcessing = true;
-
-  html5QrcodeScanner.pause();
-  viewfinder.classList.add("is-paused");
-  setStatus("Verifying with database…", true);
-
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=checkin&code=${encodeURIComponent(decodedText)}`);
-    const data = await response.json();
-    displayResult(data, decodedText);
-  } catch (error) {
-    displayResult({ status: "error", message: "Network error or script timeout." }, decodedText);
-  }
 }
 
 /* -----------------------------------------------------------
@@ -127,59 +110,14 @@ function closeSheet() {
   backdrop.setAttribute("aria-hidden", "true");
 }
 
-function displayResult(data, scannedCode) {
-  if (data.status === "success") {
-    openSheet("success", {
-      title: "Access granted",
-      subtitle: "Attendee checked in successfully.",
-      name: data.name,
-      code: data.code,
-      track: data.track,
-      time: data.time
-    });
-    setStatus("Check-in complete", false);
-
-  } else if (data.status === "already_checked_in") {
-    openSheet("warning", {
-      title: "Already checked in",
-      subtitle: "This code has already been used.",
-      name: data.name,
-      code: data.code,
-      track: data.track,
-      time: `Previously at ${data.time}`
-    });
-    setStatus("Attendee was already checked in", false);
-
-  } else if (data.status === "not_found") {
-    openSheet("danger", {
-      title: "Invalid code",
-      subtitle: "This code isn't in the database.",
-      name: "Not found",
-      code: scannedCode,
-      track: "—",
-      time: "—"
-    });
-    setStatus("Unregistered access code", false);
-
-  } else {
-    openSheet("danger", {
-      title: "System error",
-      subtitle: data.message || "Unable to verify this code.",
-      name: "—",
-      code: scannedCode,
-      track: "—",
-      time: "—"
-    });
-    setStatus("Something went wrong — try again", false);
-  }
-}
-
 function resetScanner() {
   closeSheet();
   viewfinder.classList.remove("is-paused");
   setStatus("Align a code inside the frame", false);
   isProcessing = false;
-  html5QrcodeScanner.resume();
+  if (html5QrcodeScanner && html5QrcodeScanner.getState() === Html5QrcodeScannerState.PAUSED) {
+    html5QrcodeScanner.resume();
+  }
 }
 
 btnReset.addEventListener("click", resetScanner);
@@ -272,7 +210,7 @@ function renderSearchResults(results) {
       </div>
       ${user.status !== "CHECKED_IN" 
         ? `<button class="btn-primary btn-sm" onclick="triggerManualCheckIn('${user.code}')">Verify & Check In</button>` 
-        : `<button class="btn-primary btn-sm" style="background: var(--surface-3); color: var(--text-tertiary);" disabled>Already Checked In</button>`
+        : `<button class="btn-primary btn-sm" style="background: var(--surface-2); color: var(--text-tertiary);" disabled>Already Checked In</button>`
       }
     </div>
   `).join('');
